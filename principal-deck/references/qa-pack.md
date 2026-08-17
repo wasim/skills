@@ -1,7 +1,19 @@
-# The hostile Q&A pack
+# Audience prep: the Q&A pack
 
 The Q&A decides the room more than the delivery does. Build `q-and-a.md` as
 a rehearsal script, not a FAQ.
+
+**Scale to the scenario** (from the Phase-0 hostility read):
+
+- **Hostile / high-stakes** — everything below: ~20 persona questions,
+  kill-list, drill list, timed mocks.
+- **Standard** — the 8–10 likeliest questions with answers in the same
+  format, plus one timed run.
+- **Friendly** — fold anticipated questions into the speaker notes as
+  `POCKET AMMO` beats; keep the answer format, skip the pack.
+
+The answer format and the honesty rails apply at every level; only the
+volume of preparation scales.
 
 ## Question generation
 

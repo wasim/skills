@@ -55,6 +55,7 @@ presenter must land; pocket ammo the presenter volunteers only if asked.
 | `s` | toggle the slide map (numbers + titles, current highlighted) |
 | `a` then `1–9` | appendix legend + jump to card N |
 | `n` | notes panel: closed → open → tall |
+| `g` | say-lines: the slide's quoted spoken sentences as floating bubbles |
 | `t` | pace clock: show → start → hide; `r` re-arms |
 | `f` | fullscreen (hides the key-hint line only) |
 | `p` | print / save PDF (browser fallback path) |

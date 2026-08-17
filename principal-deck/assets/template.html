@@ -203,6 +203,13 @@
     color:#e8b48f;font-weight:700;margin-bottom:.15rem}
   .np-beat .np-say{color:#ffd9ae;font-style:italic}
   aside.notes{display:none}
+  /* say-lines: the slide's spoken quotes as message bubbles; slide stays fully visible */
+  .gems{position:fixed;top:2.8rem;right:1.1rem;z-index:55;width:21rem;max-width:28vw;
+    max-height:82vh;overflow:auto;display:none;user-select:none;pointer-events:none}
+  .gems.on{display:block}
+  .gem{background:var(--ink);color:#ffd9ae;font-style:italic;
+    border-radius:12px;border-bottom-right-radius:3px;padding:.45rem .75rem;margin-bottom:.45rem;
+    font-size:.84rem;line-height:1.4;box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.9}
   .helphint{position:fixed;left:1.1rem;bottom:.9rem;font-family:var(--mono);font-size:.68rem;color:var(--faint);user-select:none}
   .jumpmap{
     position:fixed;right:1.1rem;bottom:2.6rem;z-index:60;
@@ -234,7 +241,7 @@
     }
     .fragment{opacity:1 !important;transform:none !important}
     .fragment.stagger tbody tr{opacity:1 !important;transform:none !important}
-    .hud,.notes-panel,.helphint,.clock,.jumpmap{display:none !important}
+    .hud,.notes-panel,.helphint,.clock,.jumpmap,.gems{display:none !important}
     figure.sheet svg{max-height:56vh}
   }
 </style>
@@ -415,8 +422,9 @@
 <!-- ================= presenter chrome ================= -->
 <div class="clock" id="clock"></div>
 <div class="hud" id="counter">1 / 1</div>
-<div class="helphint">&larr; &rarr; navigate &middot; &darr; complete slide &middot; 0-9 jump &middot; s slide map &middot; a+digit appendix &middot; n notes (again: tall) &middot; t timer (r reset) &middot; f fullscreen &middot; p print/PDF</div>
+<div class="helphint">&larr; &rarr; navigate &middot; &darr; complete slide &middot; 0-9 jump &middot; s slide map &middot; a+digit appendix &middot; n notes (again: tall) &middot; g say-lines &middot; t timer (r reset) &middot; f fullscreen &middot; p print/PDF</div>
 <div class="jumpmap" id="jumpmap"></div>
+<div class="gems" id="gems"></div>
 <div class="notes-panel" id="notesPanel">
   <div class="np-head">
     <div class="np-label" id="npLabel">Speaker notes</div>
@@ -493,6 +501,7 @@
     slides.forEach(function(s,i){ s.classList.toggle('active', i===cur); });
     counter.textContent = (cur+1) + ' / ' + slides.length;
     renderNotes();
+    renderGems();
     sync();
     paint();
   }
@@ -511,6 +520,22 @@
     h = h.replace(/(^|[\s(—·:>])'(?!\s)((?:[^']|'(?=[A-Za-z]))+?)'(?=[\s.,;:!?)—·]|$)/g,
       '$1<span class="np-say">‘$2’</span>');
     return h;
+  }
+  /* say-lines bubbles: every 'quoted' spoken line in the slide's notes */
+  var gemsEl = document.getElementById('gems');
+  var gemsOn = false;
+  var SAY_RE = /(^|[\s(—·:>])'(?!\s)((?:[^']|'(?=[A-Za-z]))+?)'(?=[\s.,;:!?)—·]|$)/g;
+  function renderGems(){
+    if(!gemsOn){ gemsEl.classList.remove('on'); return; }
+    var n = slides[cur].getAttribute('data-notes') || '';
+    var out = [], m;
+    SAY_RE.lastIndex = 0;
+    /* skip short quoted terms — bubbles are for sentences */
+    while((m = SAY_RE.exec(n))){ if(m[2].length >= 15) out.push(m[2]); }
+    gemsEl.innerHTML = out.length
+      ? out.map(function(q){ return '<div class="gem">‘' + escHtml(q) + '’</div>'; }).join('')
+      : '<div class="gem">(no say-lines on this slide)</div>';
+    gemsEl.classList.add('on');
   }
   function slideName(i){
     var ai = apx.indexOf(slides[i]);
@@ -631,6 +656,7 @@
       notesPanel.classList.toggle('open', notesState>0);
       notesPanel.classList.toggle('tall', notesState===2);
     }
+    else if(e.key==='g' || e.key==='G'){ gemsOn=!gemsOn; renderGems(); }
     else if(e.key==='t' || e.key==='T'){ toggleClock(); }
     else if(e.key==='r' || e.key==='R'){ resetClock(); }
     else if(e.key==='f' || e.key==='F'){ toggleFullscreen(); }

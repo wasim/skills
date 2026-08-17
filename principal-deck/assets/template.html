@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deck title · Audience</title>
+<style>
+  /* ============ design tokens ============ */
+  :root{
+    --bg:#faf9f5;
+    --ink:#1c1915;
+    --muted:#6b655c;
+    --faint:#8a8175;
+    --accent:#a8502c;
+    --rule:#e6e1d7;
+    --card:#ffffff;
+    --t-sand:#f0eadf; --t-sand-s:#ded3bf;
+    --t-clay:#f6e7dd; --t-clay-s:#e3c6b4;
+    --t-paper:#f7f4ec; --t-paper-s:#e6e1d7;
+    --cell-s:#d8d0c0;
+    --step-0:2.6rem;  /* slide headline */
+    --step-1:1.25rem; /* lead */
+    --step-2:1.02rem; /* body */
+    --step-3:0.9rem;  /* small */
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  html{font-size:clamp(13px,1.25vw,22px)}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:var(--font);
+    font-size:1rem;line-height:1.45;
+    overflow:hidden;
+  }
+  /* ============ slide geometry ============ */
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    padding:5.5vh 6.5vw 7vh;
+  }
+  .slide.active{display:flex;animation:slidein .18s ease-out both}
+  @keyframes slidein{from{opacity:0}to{opacity:1}}
+  .kicker{
+    font-family:var(--mono);
+    font-size:.76rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:1.2rem;font-weight:600;
+  }
+  .appendix-tag{
+    font-family:var(--mono);
+    font-size:.76rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:1.2rem;font-weight:600;
+  }
+  h1{font-size:var(--step-0);line-height:1.12;font-weight:700;letter-spacing:-.015em;max-width:28ch}
+  h2{font-size:var(--step-0);line-height:1.15;font-weight:700;letter-spacing:-.015em;margin-bottom:2.2vh;max-width:36ch}
+  h2.dense{font-size:2.05rem;max-width:46ch}
+  .lead{font-size:var(--step-1);color:var(--ink);max-width:60ch}
+  .body{font-size:var(--step-2)}
+  .muted{color:var(--muted)}
+  .accent{color:var(--accent)}
+  .content{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+  ul.plain{list-style:none}
+  ul.plain>li{padding:.42rem 0;border-bottom:1px solid var(--rule);font-size:var(--step-1)}
+  ul.plain>li:last-child{border-bottom:none}
+  ul.plain.compact>li{font-size:var(--step-2);padding:.36rem 0}
+  .sub{font-size:var(--step-3);color:var(--muted);margin-top:.15rem}
+  .quote{
+    border-left:3px solid var(--accent);padding-left:1rem;
+    font-size:var(--step-1);margin-top:2.2vh;max-width:56ch;
+  }
+  .verdict{
+    border-left:4px solid var(--accent);padding-left:1.3rem;
+    font-size:1.35rem;line-height:1.4;margin-top:2vh;max-width:64ch;
+  }
+  .essential{font-size:1.55rem;line-height:1.4;border-left:4px solid var(--accent);padding-left:1.3rem;max-width:40ch}
+  .essential strong{color:var(--accent)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:2.4rem 3rem;align-items:start}
+  .cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.8rem;align-items:start}
+  .block h3{font-size:var(--step-2);font-weight:700;margin-bottom:.35rem}
+  .block p{font-size:var(--step-3);color:var(--muted)}
+  .block .claim{color:var(--ink);font-size:var(--step-2)}
+  /* a "position": decision + rejected alternative + trade-off */
+  .pos{border-left:3px solid var(--accent);padding-left:1rem}
+  .pos h3{font-family:var(--mono);font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:.5rem}
+  .pos .claim{color:var(--ink);font-size:var(--step-2);font-weight:600;margin-bottom:.45rem}
+  .pos p{font-size:var(--step-3);color:var(--muted);margin-top:.35rem}
+  /* tables; table.hero is the value table, .col-base marks the baseline column */
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+  th{font-family:var(--mono);text-align:left;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-size:.7rem;padding:.5rem .8rem;border-bottom:2px solid var(--ink)}
+  td{padding:.72rem .8rem;border-bottom:1px solid var(--rule);vertical-align:top;font-size:var(--step-3)}
+  td:first-child{font-weight:600;white-space:nowrap}
+  table.hero td{font-size:var(--step-2);padding:.85rem .8rem}
+  table.hero td:first-child{font-weight:700;white-space:normal}
+  table.hero th.col-base,table.hero td.col-base{background:var(--t-paper)}
+  table.hero th.col-base{color:var(--accent)}
+  table.hero td.col-base strong{color:var(--accent)}
+  .footline{margin-top:auto;padding-top:1.4vh;font-size:var(--step-3);color:var(--muted);border-top:1px solid var(--rule)}
+  .num{
+    display:inline-block;min-width:1.55rem;height:1.55rem;line-height:1.55rem;text-align:center;
+    border:1.5px solid var(--accent);border-radius:50%;color:var(--accent);
+    font-size:.85rem;font-weight:700;margin-right:.6rem;
+  }
+  .qcard{
+    border-left:3px solid var(--accent);padding-left:1rem;margin-bottom:2.2vh;
+    font-size:var(--step-2);color:var(--ink);max-width:60ch;
+  }
+  .qcard span{display:block;font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:.3rem}
+  /* ============ roadmap: phases, waves, risk cards ============ */
+  .phases{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.4rem}
+  .phase{border-top:3px solid var(--accent);padding-top:.7rem}
+  .phase h3{font-size:var(--step-2);font-weight:700}
+  .phase .ph-when{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem}
+  .phase p{font-size:var(--step-3);color:var(--muted);margin-top:.3rem}
+  .waves{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-top:2.2vh}
+  .wave{background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:.7rem .8rem}
+  .wave .w-n{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .wave .w-t{font-size:var(--step-3);font-weight:700;margin:.15rem 0}
+  .wave p{font-size:.88rem;color:var(--muted)}
+  .risks{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-top:.5vh}
+  .risk{background:var(--bg);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:6px;padding:.5rem .7rem}
+  .risk .r-t{font-size:.84rem;font-weight:700}
+  .risk p{font-size:.76rem;color:var(--muted);margin-top:.05rem;white-space:nowrap}
+  .risk p b{color:var(--accent);font-weight:600}
+  /* ============ drawing-sheet figures ============ */
+  figure.sheet{
+    background:var(--card);border:1px solid var(--rule);
+    margin-top:1.8vh;display:flex;flex-direction:column;min-height:0;
+  }
+  figure.sheet .canvas{padding:16px 18px 8px;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+  figure.sheet .canvas.pad{display:block}
+  figure.sheet svg{display:block;width:100%;height:auto;max-height:60vh}
+  figure.sheet figcaption{
+    display:flex;justify-content:space-between;gap:16px;align-items:baseline;flex-wrap:wrap;
+    border-top:1px solid var(--rule);padding:8px 14px;
+    font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  }
+  figure.sheet figcaption .fig-no{color:var(--accent);font-weight:600}
+  figure.sheet figcaption .fig-note{color:var(--faint)}
+  .fill{flex:1;min-height:0}
+  /* ============ SVG diagram grammar ============ */
+  svg .band-sand{fill:var(--t-sand);stroke:var(--t-sand-s);stroke-width:1}
+  svg .band-clay{fill:var(--t-clay);stroke:var(--t-clay-s);stroke-width:1}
+  svg .band-paper{fill:var(--t-paper);stroke:var(--t-paper-s);stroke-width:1}
+  svg .band-tag{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;fill:var(--faint)}
+  svg .cell{fill:var(--card);stroke:var(--cell-s);stroke-width:1.2}
+  svg .cell-strong{fill:var(--card);stroke:var(--accent);stroke-width:2}
+  svg .cell-ink{fill:var(--card);stroke:var(--ink);stroke-width:2}
+  svg .dg-label{font-family:var(--font);font-size:17px;font-weight:700;fill:var(--ink)}
+  svg .dg-sub{font-family:var(--font);font-size:13.5px;fill:var(--muted)}
+  svg .dg-flow{stroke:#8f887c;stroke-width:1.5;fill:none;marker-end:url(#arr)}
+  svg .dg-flow-accent{stroke:var(--accent);stroke-width:1.8;fill:none;marker-end:url(#arrA)}
+  svg .dg-accent-label{font-family:var(--font);font-size:13.5px;font-weight:600;fill:var(--accent)}
+  svg .dg-boundary{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-dasharray:7 6}
+  svg .dg-boundary-label{font-family:var(--mono);font-size:12px;font-weight:600;fill:var(--accent);letter-spacing:.1em}
+  /* ============ fragments (keypress beats) ============ */
+  .fragment{opacity:0;transform:translateY(4px);transition:opacity .2s ease-out,transform .2s ease-out}
+  .fragment.revealed{opacity:1;transform:none}
+  .fragment.stagger tbody tr{opacity:0;transform:translateY(4px);transition:opacity .2s ease-out,transform .2s ease-out}
+  .fragment.stagger.revealed tbody tr{opacity:1;transform:none}
+  .fragment.stagger.revealed tbody tr:nth-child(2){transition-delay:.08s}
+  .fragment.stagger.revealed tbody tr:nth-child(3){transition-delay:.16s}
+  .fragment.stagger.revealed tbody tr:nth-child(4){transition-delay:.24s}
+  /* ============ presenter chrome (never printed) ============ */
+  .hud{
+    position:fixed;right:1.1rem;bottom:.9rem;
+    font-family:var(--mono);font-size:.74rem;color:var(--muted);font-variant-numeric:tabular-nums;
+    user-select:none;
+  }
+  .clock{
+    position:fixed;right:1.1rem;top:.9rem;
+    font-family:var(--mono);font-size:.8rem;font-variant-numeric:tabular-nums;
+    color:var(--faint);user-select:none;display:none;
+  }
+  .clock.on{display:block}
+  .clock .pace{font-weight:700}
+  .clock .ahead{color:#4b7a4b}
+  .clock .behind{color:var(--accent)}
+  .notes-panel{
+    position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;
+    background:var(--ink);color:#f3efe7;padding:1rem 6.5vw 1.2rem;
+    font-size:.92rem;line-height:1.5;display:none;
+  }
+  .notes-panel.open{display:block}
+  .notes-panel.tall{max-height:72vh}
+  .np-head{display:flex;align-items:baseline;gap:.9rem;margin-bottom:.55rem}
+  .notes-panel .np-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#c9a48f}
+  .np-tt{font-family:var(--mono);font-size:.68rem;font-weight:700;background:#c9a48f;color:#1f1b16;
+    padding:.08rem .55rem;border-radius:999px;display:none}
+  .np-tt.on{display:inline-block}
+  /* newspaper columns: beats read top-to-bottom then across; no empty boxes */
+  .np-beats{columns:26rem;column-gap:.6rem}
+  .np-beat{background:rgba(255,255,255,.055);border-left:3px solid rgba(201,164,143,.45);
+    border-radius:6px;padding:.45rem .7rem .45rem 2.1rem;font-size:.86rem;line-height:1.45;
+    break-inside:avoid;margin-bottom:.5rem;position:relative}
+  .np-beat .np-n{position:absolute;left:.6rem;top:.5rem;font-family:var(--mono);
+    font-size:.62rem;color:#8f887c;font-weight:700}
+  /* the first beat is the lede — the words that open the slide */
+  .np-beat.np-first{border-left-color:#e8b48f;background:rgba(232,180,143,.13);font-size:.92rem}
+  .np-beat .np-cap{display:block;font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;
+    color:#e8b48f;font-weight:700;margin-bottom:.15rem}
+  .np-beat .np-say{color:#ffd9ae;font-style:italic}
+  aside.notes{display:none}
+  .helphint{position:fixed;left:1.1rem;bottom:.9rem;font-family:var(--mono);font-size:.68rem;color:var(--faint);user-select:none}
+  .jumpmap{
+    position:fixed;right:1.1rem;bottom:2.6rem;z-index:60;
+    background:var(--ink);color:#f3efe7;border-radius:8px;
+    padding:.75rem 1rem .8rem;font-family:var(--mono);font-size:.76rem;line-height:1.65;
+    display:none;user-select:none;box-shadow:0 8px 28px rgba(0,0,0,.28);
+  }
+  .jumpmap.on{display:block}
+  .jumpmap .jm-t{font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:#c9a48f;margin-bottom:.35rem}
+  .jumpmap b{color:#e8b48f;font-weight:700;display:inline-block;min-width:1.9em}
+  .jumpmap .cur{color:#e8b48f}
+  /* ============ motion & print ============ */
+  @media (prefers-reduced-motion:reduce){
+    .slide.active{animation:none}
+    .fragment{transition:none;transform:none}
+    .fragment.stagger tbody tr{transition:none;transform:none}
+  }
+  /* fullscreen keeps counter + clock (presenter chrome); only key hints leave the screen share */
+  :fullscreen .helphint{display:none}
+  :-webkit-full-screen .helphint{display:none}
+  @page{size:A4 landscape;margin:0}
+  @media print{
+    body{overflow:visible;background:#fff}
+    .slide{
+      display:flex !important;position:relative;inset:auto;
+      width:100%;height:100vh;
+      page-break-after:always;break-after:page;
+      padding:6vh 7vw;animation:none;
+    }
+    .fragment{opacity:1 !important;transform:none !important}
+    .fragment.stagger tbody tr{opacity:1 !important;transform:none !important}
+    .hud,.notes-panel,.helphint,.clock,.jumpmap{display:none !important}
+    figure.sheet svg{max-height:56vh}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     SAMPLE SLIDES — replace with your content. Patterns demonstrated:
+     title · positions · figure · value table · roadmap+risks · close ·
+     appendix pocket cards (data-apx).
+     Notes grammar: TT m:ss budget · || beat separators · 'quoted' = spoken.
+     ================================================================ -->
+
+<section class="slide" data-map="Opening &amp; recommendation" data-notes="TT 1:00 — 'Hello everyone. I will start with my recommendation up front: [the answer]. The next twenty minutes is how.' Total 20:00, NN keypresses; per-slide budgets run on the 't' clock. || Locked phrases (beat order matters, word-perfect recall does not): [phrase 1] · [phrase 2] · [the ask]. || Answer first in minute one; echo the same sentence in the close.">
+  <div class="content">
+    <div class="kicker">Client · Occasion</div>
+    <h1>The recommendation, as a headline</h1>
+    <p class="lead" style="margin-top:1.4rem">One sentence stating the answer and the shape of the next twenty minutes.</p>
+  </div>
+  <div class="footline">Presenter · Date</div>
+</section>
+
+<section class="slide" data-notes="TT 2:30. Open: 'Three choices decide whether this scales. I will state all three, including what I rejected.' || Each position: the decision, the rejected alternative, the honest trade-off. A position without a named rejection is a platitude. || POCKET AMMO (only if asked): depth notes for each position go here, marked like this.">
+  <div class="kicker">Positions</div>
+  <h2>Three choices, made</h2>
+  <div class="content">
+    <div class="cols3">
+      <div class="pos fragment" data-frag="1">
+        <h3>Position one</h3>
+        <p class="claim">The decision, in one strong sentence.</p>
+        <p>Rejected: the alternative, and why.</p>
+        <p>Trade-off owned: the honest cost.</p>
+      </div>
+      <div class="pos fragment" data-frag="2">
+        <h3>Position two</h3>
+        <p class="claim">The decision, in one strong sentence.</p>
+        <p>Rejected: the alternative, and why.</p>
+        <p>Trade-off owned: the honest cost.</p>
+      </div>
+      <div class="pos fragment" data-frag="3">
+        <h3>Position three</h3>
+        <p class="claim">The decision, in one strong sentence.</p>
+        <p>Rejected: the alternative, and why.</p>
+        <p>Trade-off owned: the honest cost.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-notes="TT 2:30. Open: 'Let me show you the solution, and I will build it in the order the value flows.' || Build order = fragment order; close the slide with the sweep: every chain ends in a named capability, not a product logo. || No legend for anything the drawing already says.">
+  <div class="kicker">Target architecture</div>
+  <h2>The solution, built in the order the value flows</h2>
+  <div class="content">
+    <figure class="sheet">
+      <div class="canvas">
+        <svg viewBox="0 0 1040 300" role="img" aria-label="Sample diagram: source flows through platform to outcome inside a governance boundary">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#8f887c"/>
+            </marker>
+            <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#a8502c"/>
+            </marker>
+          </defs>
+          <rect class="band-sand" x="20" y="70" width="1000" height="120" rx="10"/>
+          <text class="band-tag" x="40" y="95">LAYER</text>
+          <g class="fragment" data-frag="1">
+            <rect class="cell" x="60" y="110" width="200" height="60" rx="8"/>
+            <text class="dg-label" x="160" y="136" text-anchor="middle">Source</text>
+            <text class="dg-sub" x="160" y="156" text-anchor="middle">system of record</text>
+            <line class="dg-flow" x1="262" y1="140" x2="418" y2="140"/>
+          </g>
+          <g class="fragment" data-frag="2">
+            <rect class="cell-strong" x="420" y="110" width="200" height="60" rx="8"/>
+            <text class="dg-label" x="520" y="136" text-anchor="middle">Platform</text>
+            <text class="dg-sub" x="520" y="156" text-anchor="middle">the job it is built for</text>
+            <line class="dg-flow-accent" x1="622" y1="140" x2="778" y2="140"/>
+          </g>
+          <g class="fragment" data-frag="3">
+            <rect class="cell-ink" x="780" y="110" width="200" height="60" rx="8"/>
+            <text class="dg-label" x="880" y="136" text-anchor="middle">Capability</text>
+            <text class="dg-sub" x="880" y="156" text-anchor="middle">what the chain earns</text>
+          </g>
+          <g class="fragment" data-frag="4">
+            <rect class="dg-boundary" x="35" y="45" width="970" height="220" rx="12"/>
+            <text class="dg-boundary-label" x="52" y="34">GOVERNANCE &amp; CONSENT</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption><span class="fig-no">FIG 01</span><span>Sample chain</span><span class="fig-note">every chain ends in a capability</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="slide" data-notes="TT 3:00 — usually the longest slide. Open: 'The grammar of value here is three words: baseline, projected, tracked.' Walk ONE row fully, then one line per remaining row. Exit: 'measure, iterate, retire.' || Baseline doctrine: where a process exists but is unmeasured, measuring it is deliverable #1; where the capability is new, the old equivalent is the baseline. || Name the forum where these numbers are read, and its owner.">
+  <div class="kicker">Value realization</div>
+  <h2><span class="accent">Baseline &rarr; projected &rarr; tracked.</span> No use case without value</h2>
+  <div class="content">
+    <table class="hero fragment stagger" data-frag="1">
+      <thead>
+        <tr><th>Use case</th><th>KPI</th><th class="col-base">Baseline</th><th>Projected</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Use case one</td><td>The KPI, named</td><td class="col-base"><strong>Today's number</strong> (or: measured in wave 1)</td><td>Direction + magnitude you can own</td><td>Named role</td></tr>
+        <tr><td>Use case two</td><td>The KPI, named</td><td class="col-base"><strong>The old equivalent</strong></td><td>Direction + magnitude</td><td>Named role</td></tr>
+        <tr><td>Use case three</td><td>The KPI, named</td><td class="col-base"><strong>Today's number</strong></td><td>Direction + magnitude</td><td>Named role</td></tr>
+      </tbody>
+    </table>
+    <p class="footline fragment" data-frag="2">Read monthly in [the forum], accountable: [role] &middot; holdouts prove, untouched units indicate &middot; measure &rarr; iterate &rarr; retire</p>
+  </div>
+</section>
+
+<section class="slide" data-notes="TT 2:00. PHASE STORY SPINE (say each phase as what it EARNS): P1 earns trust on easy ground; P2 earns the hard thing; P3 earns scale. || Phases one breath each; waves = 'one new variable per wave'; risks are the last beat, 20 seconds: name each risk with its mitigation. || PHASES vs USE CASES untangler if challenged: 'Phases build capability; use cases cash it in.'">
+  <div class="kicker">Roadmap</div>
+  <h2>Milestone-gated: foundation early, value shown in quarters</h2>
+  <div class="content">
+    <figure class="sheet fill">
+      <div class="canvas pad">
+        <div class="phases">
+          <div class="phase fragment" data-frag="1"><div class="ph-when">Phase 1 · quarters 1&ndash;2</div><h3>What it earns: trust</h3><p>Thin slice on easy ground; its number.</p></div>
+          <div class="phase fragment" data-frag="2"><div class="ph-when">Phase 2 · quarters 3&ndash;4</div><h3>What it earns: the hard thing</h3><p>The capability that unlocks the next tier; its number.</p></div>
+          <div class="phase fragment" data-frag="3"><div class="ph-when">Phase 3 · year 2+</div><h3>What it earns: scale</h3><p>More value without more headcount; its number.</p></div>
+        </div>
+        <div class="waves fragment" data-frag="4">
+          <div class="wave"><div class="w-n">Wave 1</div><div class="w-t">One unit</div><p>one new variable</p></div>
+          <div class="wave"><div class="w-n">Wave 2</div><div class="w-t">Few units</div><p>the package hardens</p></div>
+          <div class="wave"><div class="w-n">Wave 3</div><div class="w-t">Scale out</div><p>readiness-sequenced</p></div>
+          <div class="wave"><div class="w-n">Gate</div><div class="w-t">Refactor first</div><p>no wave before it</p></div>
+        </div>
+        <div class="footline fragment" data-frag="5">
+          <span style="font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600">Risks, managed</span>
+          <div class="risks">
+            <div class="risk"><div class="r-t">Risk one</div><p><b>&rarr;</b> its mitigation</p></div>
+            <div class="risk"><div class="r-t">Risk two</div><p><b>&rarr;</b> its mitigation</p></div>
+            <div class="risk"><div class="r-t">Risk three</div><p><b>&rarr;</b> its mitigation</p></div>
+            <div class="risk"><div class="r-t">Risk four</div><p><b>&rarr;</b> its mitigation</p></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><span class="fig-no">FIG 02</span><span>Phases build capability; use cases cash it in</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="slide" data-notes="TT 1:30. Open: 'Let me close by putting the whole argument on one picture.' The 3&ndash;4 takeaways the room must remember an hour later, then the ask, verbatim: '[the ask].' Then SILENCE — silence after a good answer is strength.">
+  <div class="kicker">The ask</div>
+  <h2>The echo, then the ask</h2>
+  <div class="content">
+    <ul class="plain">
+      <li class="fragment" data-frag="1"><span class="num">1</span>Takeaway one — the sentence they repeat in the corridor.</li>
+      <li class="fragment" data-frag="2"><span class="num">2</span>Takeaway two.</li>
+      <li class="fragment" data-frag="3"><span class="num">3</span>Takeaway three.</li>
+    </ul>
+    <p class="verdict fragment" data-frag="4"><strong>The ask, explicit:</strong> approve [the specific thing]. </p>
+  </div>
+</section>
+
+<!-- ============ appendix pocket cards: data-apx routes them to a+digit ============ -->
+
+<section class="slide" data-apx data-map="Pocket card: predicted attack one" data-notes="Answer first, one structure, stop. This card is jumped to mid-Q&amp;A via a+1 — it must stand alone and arrive complete.">
+  <div class="appendix-tag">Appendix A1</div>
+  <h2>Predicted attack one</h2>
+  <div class="content">
+    <div class="qcard"><span>The question</span>The hostile question, verbatim, as a persona would ask it.</div>
+    <p class="lead">The answer-first response, then the single supporting structure.</p>
+  </div>
+</section>
+
+<section class="slide" data-apx data-map="Pocket card: predicted attack two" data-notes="Same shape: answer first, one structure, stop.">
+  <div class="appendix-tag">Appendix A2</div>
+  <h2>Predicted attack two</h2>
+  <div class="content">
+    <div class="qcard"><span>The question</span>The hostile question, verbatim.</div>
+    <p class="lead">The answer-first response.</p>
+  </div>
+</section>
+
+<!-- ================= presenter chrome ================= -->
+<div class="clock" id="clock"></div>
+<div class="hud" id="counter">1 / 1</div>
+<div class="helphint">&larr; &rarr; navigate &middot; &darr; complete slide &middot; 0-9 jump &middot; s slide map &middot; a+digit appendix &middot; n notes (again: tall) &middot; t timer (r reset) &middot; f fullscreen &middot; p print/PDF</div>
+<div class="jumpmap" id="jumpmap"></div>
+<div class="notes-panel" id="notesPanel">
+  <div class="np-head">
+    <div class="np-label" id="npLabel">Speaker notes</div>
+    <div class="np-tt" id="npTT"></div>
+  </div>
+  <div id="notesBody"></div>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  /* main slides are digit-jumpable (1..9, 0 = tenth); data-apx slides ride a+digit */
+  var mains = slides.filter(function(s){ return !s.hasAttribute('data-apx'); });
+  var apx   = slides.filter(function(s){ return  s.hasAttribute('data-apx'); });
+  var cur = 0;
+  var notesState = 0;   /* 0 closed · 1 open (34vh) · 2 tall (72vh) */
+  var apxArm = false;
+  var counter = document.getElementById('counter');
+  var notesPanel = document.getElementById('notesPanel');
+  var notesBody = document.getElementById('notesBody');
+
+  /* ---- pace clock config ----
+     TOTAL = the presentation budget in seconds.
+     TARGET = cumulative seconds by the END of each MAIN slide (tune to the
+     rehearsed talk track). Leave empty to distribute TOTAL evenly. */
+  var TOTAL = 1200;
+  var TARGET = [];
+
+  function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  /* ---- jump map: s = slide list, a = appendix legend; built from the DOM ---- */
+  var mapEl = document.getElementById('jumpmap');
+  function mapLabel(s){
+    var m = s.getAttribute('data-map'); if(m) return m;
+    var k = s.querySelector('.kicker, .appendix-tag');
+    if(k && k.textContent.trim()) return k.textContent.trim();
+    var h = s.querySelector('h1, h2');
+    return h ? h.textContent.trim().slice(0,44) : '(untitled)';
+  }
+  var SLIDE_MAP = mains.slice(0,10).map(function(s,i){
+    return [i===9 ? '0' : String(i+1), mapLabel(s), slides.indexOf(s)];
+  });
+  var APX_MAP = apx.slice(0,9).map(function(s,i){
+    return ['a'+(i+1), mapLabel(s), slides.indexOf(s)];
+  });
+  var mapMode = null;
+  function showMap(mode){
+    mapMode = mode;
+    var rows = (mode==='apx' ? APX_MAP : SLIDE_MAP);
+    var title = (mode==='apx' ? 'Appendix &middot; press a digit' : 'Slides &middot; 1&ndash;0 jumps &middot; s closes');
+    mapEl.innerHTML = '<div class="jm-t">' + title + '</div>' +
+      rows.map(function(r){
+        var cls = (r[2]===cur ? ' class="cur"' : '');
+        return '<div' + cls + '><b>' + r[0] + '</b> ' + escHtml(r[1]) + '</div>';
+      }).join('');
+    mapEl.classList.add('on');
+  }
+  function hideMap(mode){
+    if(mode && mapMode !== mode) return;
+    mapMode = null; mapEl.classList.remove('on');
+  }
+
+  /* reveal hooks: slides that need JS-driven layout react to fragment state */
+  var hooks = [];
+  window.deckHook = function(fn){ hooks.push(fn); sync(); };
+  function sync(){ hooks.forEach(function(f){ try{ f(); }catch(e){} }); }
+  window.deckSync = sync;
+
+  function frags(i){
+    return Array.prototype.slice.call(slides[i].querySelectorAll('.fragment'))
+      .sort(function(a,b){return (+a.dataset.frag||0)-(+b.dataset.frag||0);});
+  }
+  function render(){
+    slides.forEach(function(s,i){ s.classList.toggle('active', i===cur); });
+    counter.textContent = (cur+1) + ' / ' + slides.length;
+    renderNotes();
+    sync();
+    paint();
+  }
+
+  /* ---- notes panel: beats as cards, TT badge, spoken lines highlighted ---- */
+  var npLabel = document.getElementById('npLabel');
+  var npTT = document.getElementById('npTT');
+  function markupBeat(t){
+    var h = escHtml(t);
+    /* leading ALL-CAPS label (e.g. POCKET AMMO) becomes a small header */
+    h = h.replace(/^((?:[A-Z][A-Z0-9&\/’'\-]+[ ,]+){1,}[A-Z][A-Z0-9&\/’'\-]+)/,
+      '<span class="np-cap">$1</span>');
+    /* quoted lines are the words actually spoken — make them pop.
+       Heuristic pairing: opener after start/space/punct, closer before
+       space/punct/end; apostrophes inside words stay untouched. */
+    h = h.replace(/(^|[\s(—·:>])'(?!\s)((?:[^']|'(?=[A-Za-z]))+?)'(?=[\s.,;:!?)—·]|$)/g,
+      '$1<span class="np-say">‘$2’</span>');
+    return h;
+  }
+  function slideName(i){
+    var ai = apx.indexOf(slides[i]);
+    return ai >= 0 ? 'A' + (ai+1) : 'Slide ' + (mains.indexOf(slides[i])+1);
+  }
+  function renderNotes(){
+    var n = slides[cur].getAttribute('data-notes') || '';
+    var head = slides[cur].querySelector('h2, h1');
+    npLabel.textContent = 'Notes · ' + slideName(cur) + (head ? ' — ' + head.textContent : '');
+    var tt = n.match(/TT\s*(\d+:\d+)/);
+    npTT.textContent = tt ? 'TT ' + tt[1] : '';
+    npTT.classList.toggle('on', !!tt);
+    if(!n){ notesBody.innerHTML = '<em>(no notes)</em>'; return; }
+    var beats = n.split('||').map(function(t){ return t.trim(); }).filter(Boolean);
+    if(beats.length && tt){
+      beats[0] = beats[0].replace(/^TT\s*\d+:\d+[\s.—-]*/, '');
+      if(!beats[0]) beats.shift();
+    }
+    notesBody.innerHTML = '<div class="np-beats">' +
+      beats.map(function(b,i){
+        return '<div class="np-beat' + (i===0 ? ' np-first' : '') + '">' +
+          '<span class="np-n">' + ('0'+(i+1)).slice(-2) + '</span>' + markupBeat(b) + '</div>';
+      }).join('') +
+      '</div>';
+  }
+
+  function next(){
+    var f = frags(cur).filter(function(el){return !el.classList.contains('revealed');});
+    if(f.length){
+      var n = +f[0].dataset.frag || 0;
+      f.filter(function(el){return (+el.dataset.frag||0)===n;})
+       .forEach(function(el){el.classList.add('revealed');});
+      sync();
+      return;
+    }
+    if(cur < slides.length-1){ cur++; render(); }
+  }
+  function prev(){
+    var f = frags(cur).filter(function(el){return el.classList.contains('revealed');});
+    if(f.length){
+      var n = +f[f.length-1].dataset.frag || 0;
+      f.filter(function(el){return (+el.dataset.frag||0)===n;})
+       .forEach(function(el){el.classList.remove('revealed');});
+      sync();
+      return;
+    }
+    if(cur > 0){ cur--; render(); frags(cur).forEach(function(el){el.classList.add('revealed');}); sync(); }
+  }
+  function completeSlide(){
+    frags(cur).forEach(function(el){el.classList.add('revealed');});
+    sync();
+  }
+  function jump(i){
+    if(i>=0 && i<slides.length){ cur=i; render(); completeSlide(); }
+  }
+
+  /* ---- presenter clock: elapsed vs cumulative per-slide targets ---- */
+  var clockEl = document.getElementById('clock');
+  var clockOn = false, clockStart = null, clockTimer = null;
+  function targetFor(i){
+    var mi = mains.indexOf(slides[i]);
+    if(mi < 0) mi = mains.length - 1;              /* appendix paces as "the end" */
+    if(TARGET.length) return TARGET[Math.min(mi, TARGET.length-1)];
+    return Math.round(TOTAL * (mi+1) / mains.length);
+  }
+  function mmss(s){
+    var neg = s < 0; s = Math.abs(Math.round(s));
+    return (neg?'-':'') + Math.floor(s/60) + ':' + ('0'+(s%60)).slice(-2);
+  }
+  function paint(){
+    if(!clockOn) return;
+    if(clockStart === null){
+      clockEl.innerHTML = '<span class="pace">0:00</span> &middot; press T to start';
+      return;
+    }
+    var el = (Date.now() - clockStart)/1000;
+    var t = targetFor(cur);
+    var d = el - t;
+    var cls = d > 20 ? 'behind' : (d < -20 ? 'ahead' : '');
+    var word = d > 0 ? 'over' : 'under';
+    clockEl.innerHTML = '<span class="pace">' + mmss(el) + '</span> / ' + mmss(TOTAL) +
+      ' &middot; ' + slideName(cur).toLowerCase() + ' target ' + mmss(t) +
+      ' &middot; <span class="' + cls + '">' + mmss(Math.abs(d)) + ' ' + word + '</span>';
+  }
+  function stopTick(){ if(clockTimer){ clearInterval(clockTimer); clockTimer = null; } }
+  function toggleClock(){
+    if(!clockOn){ clockOn = true; clockEl.classList.add('on'); paint(); return; }
+    if(clockStart === null){
+      clockStart = Date.now();
+      stopTick();                       /* never stack a second interval after R */
+      clockTimer = setInterval(paint, 500);
+      paint();
+      return;
+    }
+    clockOn = false; clockEl.classList.remove('on');
+    stopTick(); clockStart = null;
+  }
+  function resetClock(){ stopTick(); clockStart = null; paint(); }
+
+  function toggleFullscreen(){
+    var d = document, root = d.documentElement;
+    var active = d.fullscreenElement || d.webkitFullscreenElement;
+    if(active){
+      if(d.exitFullscreen) d.exitFullscreen();
+      else if(d.webkitExitFullscreen) d.webkitExitFullscreen();
+    } else {
+      if(root.requestFullscreen) root.requestFullscreen();
+      else if(root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+    }
+  }
+
+  document.addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight' || e.key===' ' || e.key==='PageDown'){ e.preventDefault(); next(); }
+    else if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); prev(); }
+    else if(e.key==='ArrowDown' || e.key==='.'){ e.preventDefault(); completeSlide(); }
+    else if(e.key==='n' || e.key==='N'){
+      notesState = (notesState+1)%3;
+      notesPanel.classList.toggle('open', notesState>0);
+      notesPanel.classList.toggle('tall', notesState===2);
+    }
+    else if(e.key==='t' || e.key==='T'){ toggleClock(); }
+    else if(e.key==='r' || e.key==='R'){ resetClock(); }
+    else if(e.key==='f' || e.key==='F'){ toggleFullscreen(); }
+    else if(e.key==='p' || e.key==='P'){ window.print(); }
+    else if(e.key==='s' || e.key==='S'){ if(e.repeat) return; apxArm=false; if(mapMode==='slides'){ hideMap(); } else { showMap('slides'); } return; }
+    else if(e.key==='a' || e.key==='A'){ apxArm=true; showMap('apx'); counter.textContent='A? press a digit'; return; }
+    else if(e.key==='Escape'){ apxArm=false; hideMap(); render(); }
+    else if(e.key==='Home'){ jump(0); }
+    else if(e.key==='End'){ jump(slides.length-1); }
+    else if(/^[0-9]$/.test(e.key)){
+      var d=+e.key;
+      /* 'a' then a digit jumps straight to an appendix card mid-Q&A */
+      if(apxArm){
+        apxArm=false; hideMap('apx');
+        var t = apx[d-1];
+        if(d>=1 && t){ jump(slides.indexOf(t)); } else { render(); }
+        return;
+      }
+      hideMap();
+      var m = (d===0 ? mains[9] : mains[d-1]);
+      if(m) jump(slides.indexOf(m));
+    }
+    apxArm=false; hideMap('apx');
+  });
+  window.addEventListener('beforeprint', function(){
+    document.querySelectorAll('.fragment').forEach(function(el){el.classList.add('revealed');});
+    sync();
+  });
+  window.addEventListener('resize', sync);
+  render();
+})();
+</script>
+</body>
+</html>
